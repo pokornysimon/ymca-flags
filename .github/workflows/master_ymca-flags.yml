@@ -64,8 +64,5 @@ jobs:
           app-name: 'ymca-flags'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C6403D71B7784C7E81FE5E7B447AE7EF }}
-          # FastAPI is ASGI, so Oryx's default WSGI-style gunicorn call fails
-          # and Azure serves its placeholder page. Launch explicitly with the
-          # Uvicorn worker. Single worker required because state is in-memory
-          # and SSE holds long-lived connections.
-          startup-command: 'gunicorn --bind=0.0.0.0 --workers=1 --worker-class=uvicorn.workers.UvicornWorker --timeout=600 --keep-alive=75 main:app'
+          # NOTE: startup-command cannot be set here when using publish-profile
+          # auth. Set it once in the Azure portal instead — see README.md.

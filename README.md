@@ -37,19 +37,22 @@ The smallest tier (B1) is plenty for a handful of concurrent instructors.
 
 **Runtime:** Python 3.13, Linux.
 
-**Startup command** — this is required. FastAPI is ASGI, and Azure's default
-autodetected startup runs it as WSGI, which crashes silently and shows the
-"Your App Service app is up and running" placeholder page.
+**One-time Startup Command setup (required).** FastAPI is ASGI; Azure's
+default autodetected startup runs it as WSGI, which crashes silently and
+shows the "Your App Service app is up and running" placeholder page.
 
-The GitHub Actions workflow at [.github/workflows/master_ymca-flags.yml](.github/workflows/master_ymca-flags.yml)
-sets it on every deploy via `startup-command:`. If you deploy any other way,
-set it manually in the portal:
+The `azure/webapps-deploy` GitHub Action can't set the startup command when
+using publish-profile auth (only OIDC/service-principal auth supports it), so
+set it once in the portal:
 
-- Portal → App Service → Configuration → General Settings → Startup Command:
-  ```
-  gunicorn --bind=0.0.0.0 --workers=1 --worker-class=uvicorn.workers.UvicornWorker --timeout=600 --keep-alive=75 main:app
-  ```
-- Or point at [startup.sh](startup.sh): `bash startup.sh`
+1. Portal → App Service (**ymca-flags**) → **Configuration** → **General settings**
+2. **Startup Command**, paste one of:
+   - `bash startup.sh`  *(recommended — startup.sh is version-controlled)*
+   - or the full command:
+     `gunicorn --bind=0.0.0.0 --workers=1 --worker-class=uvicorn.workers.UvicornWorker --timeout=600 --keep-alive=75 main:app`
+3. **Save** (button at the top), then hit **Restart** on the App Service overview.
+
+You only need to do this once — it persists across deploys.
 
 **App settings** — `SCM_DO_BUILD_DURING_DEPLOYMENT=true` (installs
 `requirements.txt` on deploy). Nothing else needed; the app binds to the
