@@ -35,18 +35,42 @@ Open http://localhost:8000. Open the same URL in a second browser to see live sy
 
 The smallest tier (B1) is plenty for a handful of concurrent instructors.
 
-**Startup command** (set in the App Service configuration):
+**Runtime:** Python 3.13, Linux.
 
-```
-bash startup.sh
-```
+**Startup command** — this is required. FastAPI is ASGI, and Azure's default
+autodetected startup runs it as WSGI, which crashes silently and shows the
+"Your App Service app is up and running" placeholder page.
 
-**Required app settings:**
+The GitHub Actions workflow at [.github/workflows/master_ymca-flags.yml](.github/workflows/master_ymca-flags.yml)
+sets it on every deploy via `startup-command:`. If you deploy any other way,
+set it manually in the portal:
 
-- `SCM_DO_BUILD_DURING_DEPLOYMENT=true` — installs requirements on deploy
-- `WEBSITES_PORT=8000` — matches the gunicorn bind port in `startup.sh`
+- Portal → App Service → Configuration → General Settings → Startup Command:
+  ```
+  gunicorn --bind=0.0.0.0 --workers=1 --worker-class=uvicorn.workers.UvicornWorker --timeout=600 --keep-alive=75 main:app
+  ```
+- Or point at [startup.sh](startup.sh): `bash startup.sh`
 
-**Deploy** with the tool of your choice — VS Code Azure extension, `az webapp up`, GitHub Actions, or a zip deploy. Only one worker runs because SSE and in-memory state need every request to hit the same process.
+**App settings** — `SCM_DO_BUILD_DURING_DEPLOYMENT=true` (installs
+`requirements.txt` on deploy). Nothing else needed; the app binds to the
+`$PORT` Azure sets in the container.
+
+Only one worker runs because SSE and in-memory state need every request to hit the same process.
+
+### Troubleshooting: default Azure page after deploy
+
+If the deploy job succeeds but you still see the Azure placeholder page:
+
+1. Confirm the **Startup Command** is set — either via the workflow's
+   `startup-command:` field, or in the portal at Configuration → General
+   Settings.
+2. Portal → App Service → **Log stream** shows the container output. Look for
+   a Python traceback or a gunicorn worker crash.
+3. Portal → App Service → Diagnose and solve problems → **Container Crash**
+   often surfaces the root cause in one click.
+4. If you switch the startup command in the portal, hit **Restart** on the
+   App Service — App Service doesn't always pick up config changes on the
+   next request.
 
 ## Files
 
