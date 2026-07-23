@@ -1,0 +1,9 @@
+{% if game.status == "setup" %}
+  {% include "_team_setup.html" %}
+{% elif game.status == "countdown" %}
+  {% include "_team_countdown.html" %}
+{% elif game.status == "running" %}
+  {% include "_team_running.html" %}
+{% elif game.status == "ended" %}
+  {% include "_team_ended.html" %}
+{% endif %}

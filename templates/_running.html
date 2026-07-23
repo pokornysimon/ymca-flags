@@ -1,0 +1,223 @@
+<div data-server-now="{{ server_now }}" hidden></div>
+
+<section class="clock-bar">
+  <div>
+    <div class="label">Zbývající čas</div>
+    <div class="clock big" data-countdown-to="{{ game.ends_at.isoformat() }}">--:--</div>
+    <div class="time-adjust">
+      <span class="muted small">Upravit:</span>
+      {% for delta in [-600, -300, -60, 60, 300, 600] %}
+        <form hx-post="/adjust_time" hx-swap="none"
+              {% if delta < 0 %}hx-confirm="Odečíst {{ (-delta) // 60 }} min? Pokud čas klesne pod nulu, hra automaticky skončí."{% endif %}>
+          <input type="hidden" name="delta_seconds" value="{{ delta }}">
+          <button type="submit" class="chip-btn">{% if delta > 0 %}+{% endif %}{{ delta // 60 }}m</button>
+        </form>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="controls">
+    <form hx-post="/undo" hx-swap="none">
+      <button type="submit" class="ghost" title="Vrátit zpět poslední zaznamenanou akci">Vrátit poslední</button>
+    </form>
+    <form hx-post="/end"
+          hx-swap="none"
+          hx-confirm="Ukončit hru nyní?">
+      <button type="submit" class="danger">Ukončit hru</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Přehled skóre</h2>
+  <table class="scoreboard">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Tým</th>
+        <th>Celkem</th>
+        <th>Zajetí</th>
+        <th>Doba držení</th>
+        <th>Míčky</th>
+        <th>Zásahy <small>(statistika)</small></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in scores %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ s.team_name }}</strong></td>
+        <td class="total"
+            data-live-score
+            data-team="{{ s.team_id }}"
+            data-capture-points="{{ s.capture_points }}"
+            data-ball-points="{{ s.ball_points }}"
+            data-end-bonus="{{ s.end_bonus }}"
+            data-per-minute="{{ game.points.per_minute_held }}"
+            data-base-seconds="{{ s.seconds_held }}">
+          {{ s.total }}
+        </td>
+        <td>{{ s.captures }} <small>({{ s.capture_points }} b.)</small></td>
+        <td>
+          <span data-live-time
+                data-team="{{ s.team_id }}"
+                data-base-seconds="{{ s.seconds_held }}">
+            {{ (s.seconds_held // 60) }}m {{ (s.seconds_held % 60) }}s
+          </span>
+          <small>({{ s.time_points }} b.)</small>
+        </td>
+        <td>{{ s.balls }} <small>({{ s.ball_points }} b.)</small></td>
+        <td>{{ s.hits }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Vlajky</h2>
+  <div class="flag-grid">
+    {% for f in flags %}
+    <div class="flag {{ f.location }} flag-owner-{{ f.owner_id }}"
+         {% if f.active_holder_id %}data-active-team="{{ f.active_holder_id }}"
+         data-active-since="{{ f.active_since }}"{% endif %}>
+      <header>
+        <strong>Vlajka týmu {{ f.owner_name }}</strong>
+        <span class="badge {{ f.location }}">
+          {% if f.location == "home" %}Na základně
+          {% elif f.location == "in_transit" %}Přenášená ({{ f.carrier_name or 'neznámo' }})
+          {% elif f.location == "captured" %}U týmu {{ f.at_base_name }}
+          {% endif %}
+        </span>
+      </header>
+
+      {% if f.active_holder_name %}
+      <div class="held-by">
+        {{ f.active_holder_name }} sbírá čas —
+        <span data-tick-since="{{ f.active_since }}">0:00</span>
+      </div>
+      {% else %}
+      <div class="held-by muted">Přenášená — nikdo nezískává čas</div>
+      {% endif %}
+
+      <div class="actions">
+        {% if f.location == "in_transit" %}
+          {% if f.carrier_id is none %}
+            <div class="grab-row">
+              <span class="muted">Vlajku má:</span>
+              {% for t in game.teams.values() %}
+                <form hx-post="/flag/{{ f.owner_id }}/grab" hx-swap="none">
+                  <input type="hidden" name="by_team_id" value="{{ t.id }}">
+                  <button type="submit" class="chip-btn">{{ t.name }}</button>
+                </form>
+              {% endfor %}
+            </div>
+            <form hx-post="/flag/{{ f.owner_id }}/recover" hx-swap="none">
+              <button type="submit" class="ghost">Vrácena vlastníkovi</button>
+            </form>
+          {% elif f.carrier_id == f.owner_id %}
+            <form hx-post="/flag/{{ f.owner_id }}/recover" hx-swap="none">
+              <button type="submit" class="primary">Vrácena domů týmem {{ f.carrier_name }}</button>
+            </form>
+          {% else %}
+            <form hx-post="/flag/{{ f.owner_id }}/capture" hx-swap="none">
+              <button type="submit" class="primary">
+                Zajato týmem {{ f.carrier_name }}
+              </button>
+            </form>
+            <form hx-post="/flag/{{ f.owner_id }}/recover" hx-swap="none">
+              <button type="submit" class="ghost">Vrácena vlastníkovi</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <div class="grab-row">
+            <span class="muted">Uchopeno týmem:</span>
+            {% for t in game.teams.values() %}
+              {% set excluded = (f.location == "home" and t.id == f.owner_id)
+                              or (f.location == "captured" and t.id == f.at_base_id) %}
+              {% if not excluded %}
+                <form hx-post="/flag/{{ f.owner_id }}/grab" hx-swap="none">
+                  <input type="hidden" name="by_team_id" value="{{ t.id }}">
+                  <button type="submit" class="chip-btn">{{ t.name }}</button>
+                </form>
+              {% endif %}
+            {% endfor %}
+            <form hx-post="/flag/{{ f.owner_id }}/lose" hx-swap="none">
+              <button type="submit" class="chip-btn muted-chip">neznámo</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <h2>Míčky</h2>
+  <p class="muted small">
+    Mladší děti sbírají body doručováním míčků na základnu svého týmu.
+    Zásahy se řídí čestností a evidují se pouze jako statistika (nemají vliv na skóre).
+  </p>
+  <div class="ball-grid">
+    {% for t in game.teams.values() %}
+    <div class="team-ball">
+      <strong>{{ t.name }}</strong>
+      <div class="ball-actions">
+        <form hx-post="/ball/{{ t.id }}/delivered" hx-swap="none">
+          <button type="submit" class="primary">+1 doručený míček</button>
+        </form>
+        <form hx-post="/ball/{{ t.id }}/hit" hx-swap="none">
+          <button type="submit" class="ghost">+1 zásah</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card">
+  <details>
+    <summary><strong>Upravit bodové hodnoty</strong> — změny přepočítají všechna skóre</summary>
+    <form hx-post="/points" hx-swap="none" class="points-form">
+      <label>
+        Za zajetí
+        <input type="number" name="per_capture" value="{{ points.per_capture }}" required>
+      </label>
+      <label>
+        Za minutu držení
+        <input type="number" name="per_minute_held" value="{{ points.per_minute_held }}" required>
+      </label>
+      <label>
+        Za doručený míček
+        <input type="number" name="per_ball_delivered" value="{{ points.per_ball_delivered }}" required>
+      </label>
+      <label>
+        Bonus na konci hry za drženou vlajku
+        <input type="number" name="end_game_flag_bonus" value="{{ points.end_game_flag_bonus }}" required>
+      </label>
+      <button type="submit" class="primary">Uložit</button>
+    </form>
+  </details>
+</section>
+
+<section class="card">
+  <details>
+    <summary><strong>Poslední události</strong></summary>
+    <ul class="event-log">
+      {% for entry in game.log[-25:] | reverse %}
+      <li>
+        <span class="ts">{{ entry.t[11:19] }}</span>
+        <span class="kind">{{ entry.kind }}</span>
+        {% if entry.kind == "grab" %}— {{ entry.by_name }} uchopil vlajku týmu {{ entry.flag_name }}
+        {% elif entry.kind == "capture" %}— {{ entry.by_name }} zajal vlajku týmu {{ entry.flag_name }}
+        {% elif entry.kind == "recover" %}— vlajka týmu {{ entry.flag_name }} se vrátila domů
+        {% elif entry.kind == "lost" %}— vlajka týmu {{ entry.flag_name }} byla ztracena neznámému týmu{% if entry.from_name %} (z {{ entry.from_name }}){% endif %}
+        {% elif entry.kind == "ball_delivered" %}— {{ entry.team_name }} doručili míček
+        {% elif entry.kind == "ball_hit" %}— {{ entry.team_name }} zaznamenali zásah
+        {% elif entry.kind == "undo" %}— vrácena poslední akce
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+</section>

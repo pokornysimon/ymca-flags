@@ -1,0 +1,57 @@
+<section class="card">
+  <h2>Nastavení nové hry</h2>
+
+  <div class="team-roster">
+    <div class="label">Týmy (pevné)</div>
+    <div>
+      {% for t in game.teams.values() %}
+        <span class="chip team-chip team-{{ t.id }}">{{ t.name }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form hx-post="/setup" hx-swap="none">
+    <label>
+      Délka hry (minuty)
+      <input type="number" name="duration_minutes" min="1" max="720" value="{{ game.duration_minutes }}" required>
+    </label>
+
+    <label>
+      Odpočet před startem (sekundy)
+      <input type="number" name="countdown_seconds" min="0" max="600" value="{{ game.countdown_seconds }}" required>
+    </label>
+
+    <fieldset>
+      <legend>Bodové hodnoty</legend>
+      <label>
+        Za zajetí (vlajka donesena domů)
+        <input type="number" name="per_capture" value="{{ points.per_capture }}" required>
+      </label>
+      <label>
+        Za minutu držení (obrana nebo držení po zajetí)
+        <input type="number" name="per_minute_held" value="{{ points.per_minute_held }}" required>
+      </label>
+      <label>
+        Za doručený míček (mladší děti)
+        <input type="number" name="per_ball_delivered" value="{{ points.per_ball_delivered }}" required>
+      </label>
+      <label>
+        Bonus na konci hry za každou vlajku na vaší základně
+        <input type="number" name="end_game_flag_bonus" value="{{ points.end_game_flag_bonus }}" required>
+      </label>
+    </fieldset>
+
+    <div class="row">
+      <button type="submit" class="ghost">Uložit nastavení</button>
+    </div>
+  </form>
+
+  <div class="row spread top-space">
+    <div>
+      <small>Délka: {{ game.duration_minutes }} min · Instruktoři se mohou připojit na <a href="/join">/join</a>.</small>
+    </div>
+    <form hx-post="/start" hx-swap="none">
+      <button type="submit" class="primary big">Spustit hru</button>
+    </form>
+  </div>
+</section>

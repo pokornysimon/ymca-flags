@@ -1,0 +1,17 @@
+<section class="card team-hero team-{{ team.id }}">
+  <div class="team-hero-name">{{ team.name }}</div>
+  <div class="team-hero-sub">Jste instruktor týmu {{ team.name }}</div>
+</section>
+
+<section class="card">
+  <h2>Čekání na spuštění hry</h2>
+  <p class="muted">
+    Administrátor brzy hru spustí. Tento panel se automaticky odemkne —
+    nechte jej otevřený.
+  </p>
+  <ul class="muted small">
+    <li>Připraveno {{ game.teams | length }} týmů: {% for t in game.teams.values() %}<span class="chip">{{ t.name }}</span>{% endfor %}</li>
+    <li>Délka hry: {{ game.duration_minutes }} min</li>
+    <li>Body — za zajetí: {{ points.per_capture }}, za minutu držení: {{ points.per_minute_held }}, za míček: {{ points.per_ball_delivered }}, koncový bonus za vlajku: {{ points.end_game_flag_bonus }}</li>
+  </ul>
+</section>

@@ -1,0 +1,26 @@
+<section class="card">
+  <h2>Vestibul instruktorů</h2>
+  <p class="muted">
+    {% if game.status == "setup" %}
+      Vyberte svůj tým. Panel týmu se otevře i před spuštěním hry.
+    {% elif game.status == "running" %}
+      Hra probíhá. Vyberte svůj tým pro živé zobrazení.
+    {% else %}
+      Hra skončila. Vyberte tým pro zobrazení konečných výsledků.
+    {% endif %}
+  </p>
+  <div class="team-pick-grid">
+    {% for t in game.teams.values() %}
+      <a class="team-pick team-{{ t.id }}" href="/team/{{ t.id }}">
+        <div class="pick-name">{{ t.name }}</div>
+        <div class="pick-hint">Otevřít panel {{ t.name }}</div>
+      </a>
+    {% endfor %}
+  </div>
+  {% if game.status == "setup" %}
+    <p class="muted small top-space">
+      Délka: {{ game.duration_minutes }} min ·
+      Body: {{ points.per_capture }}/zajetí · {{ points.per_minute_held }}/min · {{ points.per_ball_delivered }}/míček · {{ points.end_game_flag_bonus }} koncový bonus
+    </p>
+  {% endif %}
+</section>

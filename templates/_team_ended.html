@@ -1,0 +1,51 @@
+{% set my_score = (scores | selectattr("team_id", "equalto", team.id) | list | first) %}
+{% set ns = namespace(rank=None) %}
+{% for s in scores %}{% if s.team_id == team.id %}{% set ns.rank = loop.index %}{% endif %}{% endfor %}
+{% set my_rank = ns.rank %}
+
+<section class="team-hero card team-{{ team.id }}">
+  <div class="team-hero-row">
+    <div>
+      <div class="team-hero-name">{{ team.name }}</div>
+      <div class="team-hero-sub">
+        {% if my_rank == 1 %}🏆 Vítězové!{% else %}Skončili jste na {{ my_rank }}. místě z {{ scores | length }}{% endif %}
+      </div>
+    </div>
+    <div class="team-hero-score">
+      <div class="label">Konečné</div>
+      <div class="score big">{{ my_score.total }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Vaše konečné bodování</h2>
+  <table class="mini-scoreboard">
+    <tr><td>Zajetí</td><td class="num">{{ my_score.captures }} × {{ game.points.per_capture }}</td><td class="num strong">{{ my_score.capture_points }}</td></tr>
+    <tr><td>Doba držení</td><td class="num">{{ (my_score.seconds_held // 60) }}m {{ (my_score.seconds_held % 60) }}s × {{ game.points.per_minute_held }}/min</td><td class="num strong">{{ my_score.time_points }}</td></tr>
+    <tr><td>Doručené míčky</td><td class="num">{{ my_score.balls }} × {{ game.points.per_ball_delivered }}</td><td class="num strong">{{ my_score.ball_points }}</td></tr>
+    <tr><td>Koncový bonus za vlajky</td><td class="num">—</td><td class="num strong">{{ my_score.end_bonus }}</td></tr>
+    <tr><td>Zásahy <small>(pouze statistika)</small></td><td class="num">{{ my_score.hits }}</td><td class="num">—</td></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Konečné pořadí</h2>
+  <table class="scoreboard compact">
+    <thead>
+      <tr><th>#</th><th>Tým</th><th class="num">Celkem</th></tr>
+    </thead>
+    <tbody>
+      {% for s in scores %}
+      <tr class="{{ 'mine' if s.team_id == team.id else '' }}">
+        <td>{{ loop.index }}</td>
+        <td>{{ s.team_name }}</td>
+        <td class="num total">{{ s.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted small top-space">
+    Čekání na spuštění nové hry administrátorem. Tato stránka se automaticky aktualizuje.
+  </p>
+</section>

@@ -1,0 +1,97 @@
+<section class="clock-bar">
+  <div>
+    <div class="label">Hra skončila</div>
+    <div class="clock big">00:00</div>
+  </div>
+  <div class="controls">
+    <form hx-post="/reset" hx-swap="none"
+          hx-confirm="Začít znovu? Všechna herní data budou smazána.">
+      <button type="submit" class="primary">Spustit novou hru</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Konečné výsledky</h2>
+  {% if scores %}
+  <div class="winner">
+    🏆 <strong>{{ scores[0].team_name }}</strong> vyhrávají s {{ scores[0].total }} body.
+  </div>
+  {% endif %}
+  <table class="scoreboard">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Tým</th>
+        <th>Celkem</th>
+        <th>Zajetí</th>
+        <th>Doba držení</th>
+        <th>Míčky</th>
+        <th>Koncový bonus</th>
+        <th>Zásahy <small>(statistika)</small></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in scores %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ s.team_name }}</strong></td>
+        <td class="total">{{ s.total }}</td>
+        <td>{{ s.captures }} <small>({{ s.capture_points }} b.)</small></td>
+        <td>{{ (s.seconds_held // 60) }}m {{ (s.seconds_held % 60) }}s <small>({{ s.time_points }} b.)</small></td>
+        <td>{{ s.balls }} <small>({{ s.ball_points }} b.)</small></td>
+        <td>{{ s.end_bonus }}</td>
+        <td>{{ s.hits }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <details>
+    <summary><strong>Upravit bodové hodnoty (přepočítá konečné skóre)</strong></summary>
+    <form hx-post="/points" hx-swap="none" class="points-form">
+      <label>
+        Za zajetí
+        <input type="number" name="per_capture" value="{{ points.per_capture }}" required>
+      </label>
+      <label>
+        Za minutu držení
+        <input type="number" name="per_minute_held" value="{{ points.per_minute_held }}" required>
+      </label>
+      <label>
+        Za doručený míček
+        <input type="number" name="per_ball_delivered" value="{{ points.per_ball_delivered }}" required>
+      </label>
+      <label>
+        Bonus na konci hry za drženou vlajku
+        <input type="number" name="end_game_flag_bonus" value="{{ points.end_game_flag_bonus }}" required>
+      </label>
+      <button type="submit" class="primary">Uložit</button>
+    </form>
+  </details>
+</section>
+
+<section class="card">
+  <details>
+    <summary><strong>Záznam událostí</strong></summary>
+    <ul class="event-log">
+      {% for entry in game.log | reverse %}
+      <li>
+        <span class="ts">{{ entry.t[11:19] }}</span>
+        <span class="kind">{{ entry.kind }}</span>
+        {% if entry.kind == "grab" %}— {{ entry.by_name }} uchopil vlajku týmu {{ entry.flag_name }}
+        {% elif entry.kind == "capture" %}— {{ entry.by_name }} zajal vlajku týmu {{ entry.flag_name }}
+        {% elif entry.kind == "recover" %}— vlajka týmu {{ entry.flag_name }} se vrátila domů
+        {% elif entry.kind == "lost" %}— vlajka týmu {{ entry.flag_name }} byla ztracena neznámému týmu{% if entry.from_name %} (z {{ entry.from_name }}){% endif %}
+        {% elif entry.kind == "ball_delivered" %}— {{ entry.team_name }} doručili míček
+        {% elif entry.kind == "ball_hit" %}— {{ entry.team_name }} zaznamenali zásah
+        {% elif entry.kind == "start" %}— hra začala
+        {% elif entry.kind == "end" %}— hra skončila
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+</section>

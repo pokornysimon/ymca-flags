@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zajmi vlajku — Administrátor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';</script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js"></script>
+</head>
+<body hx-ext="sse" sse-connect="/stream">
+  <header>
+    <h1>Zajmi vlajku</h1>
+    <span class="tag">Administrátorský panel</span>
+    <nav class="topnav">
+      <a href="/join">Panel pro instruktora týmu →</a>
+      <button type="button" class="theme-toggle" onclick="__toggleTheme()" aria-label="Přepnout světlé/tmavé téma">
+        <span class="icon-sun">☀</span><span class="icon-moon">🌙</span>
+      </button>
+    </nav>
+  </header>
+
+  <main id="main"
+        hx-get="/panel/main"
+        hx-trigger="sse:changed"
+        hx-swap="innerHTML">
+    {{ panel_html | safe }}
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<section class="card team-hero team-{{ team.id }}">
+  <div class="team-hero-name">{{ team.name }}</div>
+  <div class="team-hero-sub">Jste instruktor týmu {{ team.name }}</div>
+</section>
+
+<section class="card countdown-hero">
+  <div class="label">Hra začne za</div>
+  <div class="countdown-huge" data-countdown-to="{{ game.countdown_ends_at.isoformat() }}">--:--</div>
+  <div class="muted">Připravte tým na základně. Panel se automaticky přepne, jakmile hra začne.</div>
+</section>
+
+<section class="card">
+  <h2>Souhrn hry</h2>
+  <ul class="muted small">
+    <li>Délka hry: {{ game.duration_minutes }} min</li>
+    <li>Body — za zajetí: {{ points.per_capture }}, za minutu držení: {{ points.per_minute_held }}, za míček: {{ points.per_ball_delivered }}, koncový bonus za vlajku: {{ points.end_game_flag_bonus }}</li>
+  </ul>
+</section>
